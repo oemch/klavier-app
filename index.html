@@ -3,6 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <title>Erkenne die Melodie</title>
   <script src="https://cdn.jsdelivr.net/npm/tone@14.8.49/build/Tone.js"></script>
   <style>
@@ -296,6 +298,26 @@
       margin-top: 0.7rem;
     }
 
+    /* ── iOS Audio-Banner ── */
+    .ios-banner {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      background: rgba(240,165,0,0.95);
+      color: #1b1000;
+      text-align: center;
+      padding: 1rem;
+      font-size: 0.95rem;
+      font-weight: 700;
+      z-index: 998;
+      cursor: pointer;
+      animation: slideUp 0.4s ease;
+    }
+    .ios-banner.hidden { display: none; }
+    @keyframes slideUp {
+      from { transform: translateY(100%); }
+      to   { transform: translateY(0); }
+    }
+
     /* ── Loading overlay ── */
     .loading-overlay {
       position: fixed;
@@ -323,6 +345,11 @@
   </style>
 </head>
 <body>
+
+<!-- ═══ iOS Audio-Banner ══════════════════════════════════════ -->
+<div class="ios-banner hidden" id="iosBanner" onclick="unlockIosAudio()">
+  🔊 Tippen um Ton zu aktivieren
+</div>
 
 <!-- ═══ Loading Overlay ═══════════════════════════════════════ -->
 <div class="loading-overlay hidden" id="loadingOverlay">
@@ -485,6 +512,32 @@
 
 <script>
 // ═══════════════════════════════════════════════════════════
+//  iOS AUDIO UNLOCK
+// ═══════════════════════════════════════════════════════════
+
+const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+let iosUnlocked = false;
+
+if (isIOS) {
+  // Banner sofort anzeigen
+  document.getElementById('iosBanner').classList.remove('hidden');
+
+  // Beim allerersten Touch synchron die AudioContext entsperren
+  document.addEventListener('touchstart', function iosTouch() {
+    Tone.start();
+    iosUnlocked = true;
+    document.getElementById('iosBanner').classList.add('hidden');
+    document.removeEventListener('touchstart', iosTouch);
+  }, { passive: true });
+}
+
+function unlockIosAudio() {
+  Tone.start();
+  iosUnlocked = true;
+  document.getElementById('iosBanner').classList.add('hidden');
+}
+
+// ═══════════════════════════════════════════════════════════
 //  KONSTANTEN
 // ═══════════════════════════════════════════════════════════
 
@@ -550,6 +603,10 @@ async function initAudio() {
   showLoading(true);
   try {
     await Tone.start();
+    // iOS: AudioContext explizit resumieren
+    if (Tone.context.state !== 'running') {
+      await Tone.context.resume();
+    }
 
     // Hall-Effekt
     const reverb = new Tone.Reverb({ decay: 2.5, preDelay: 0.02 });
@@ -609,6 +666,7 @@ function showScreen(id) {
 }
 
 async function startExercise(mode) {
+  Tone.start(); // synchron – iOS AudioContext unlock
   currentMode = mode;
   if (!audioReady) await initAudio();
 
@@ -725,6 +783,7 @@ function playOnce(offsetMs, highlight = false) {
 }
 
 function handlePlay() {
+  Tone.start(); // synchron – iOS AudioContext unlock
   if (isPlaying || !audioReady || !melody) return;
 
   stopAll();
