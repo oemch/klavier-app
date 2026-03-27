@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Erkenne die Melodie</title>
+  <script src="https://cdn.jsdelivr.net/npm/tone@14.8.49/build/Tone.js"></script>
+  <style>
+    :root {
+      --bg:          #0d1117;
+      --card:        #161b22;
+      --surface:     #21262d;
+      --border:      #30363d;
+      --gold:        #f0a500;
+      --gold-light:  #f8d56b;
+      --blue:        #3b82f6;
+      --blue-light:  #93c5fd;
+      --text:        #e6edf3;
+      --muted:       #8b949e;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg) url('bg-manga.jpg') center center / cover no-repeat fixed;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text);
+      padding: 1.25rem;
+    }
+
+    /* dunkles Overlay über dem Manga-Bild */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: rgba(8, 10, 18, 0.72);
+      z-index: 0;
+    }
+
+    .app { position: relative; z-index: 1; }
+
+    .app { width: 100%; max-width: 540px; position: relative; z-index: 1; }
+
+    /* ── Screens ── */
+    .screen { display: none; }
+    .screen.active {
+      display: block;
+      animation: fadeIn 0.28s ease;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Card ── */
+    .card {
+      background: rgba(16, 20, 30, 0.82);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 18px;
+      padding: 2rem;
+    }
+
+    /* ── Typography ── */
+    h1 {
+      font-size: 2rem;
+      font-weight: 800;
+      text-align: center;
+      background: linear-gradient(135deg, var(--gold-light) 0%, var(--gold) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1.2;
+      margin-bottom: 0.35rem;
+    }
+    .tagline {
+      text-align: center;
+      font-size: 0.78rem;
+      color: var(--muted);
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      margin-bottom: 1.5rem;
+    }
+    .desc {
+      color: var(--muted);
+      line-height: 1.75;
+      font-size: 0.95rem;
+      margin-bottom: 1.25rem;
+    }
+
+    /* ── Info box ── */
+    .info-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1rem 1.25rem;
+      font-size: 0.9rem;
+      color: var(--muted);
+      margin-bottom: 1.75rem;
+      line-height: 1.65;
+    }
+    .info-box strong { color: var(--text); }
+
+    .solfege-row {
+      display: flex;
+      gap: 0.35rem;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-bottom: 0.6rem;
+    }
+    .sc {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.22rem 0.55rem;
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    /* ── Buttons ── */
+    .btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.45rem;
+      width: 100%;
+      padding: 0.9rem 1.5rem;
+      border: none;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.14s, box-shadow 0.14s, opacity 0.14s;
+      font-family: inherit;
+    }
+    .btn:active  { transform: scale(0.97) !important; }
+    .btn:disabled { opacity: 0.42; cursor: default; transform: none !important; }
+
+    .btn-gold {
+      background: linear-gradient(135deg, var(--gold-light), var(--gold));
+      color: #1b1000;
+    }
+    .btn-gold:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 22px rgba(240,165,0,0.38);
+    }
+
+    .btn-blue {
+      background: linear-gradient(135deg, var(--blue-light), var(--blue));
+      color: #001228;
+    }
+    .btn-blue:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 22px rgba(59,130,246,0.38);
+    }
+
+    .btn-ghost {
+      background: var(--surface);
+      color: var(--muted);
+      border: 1px solid var(--border);
+    }
+    .btn-ghost:hover:not(:disabled) {
+      background: var(--border);
+      color: var(--text);
+    }
+
+    .btn-stack { display: flex; flex-direction: column; gap: 0.75rem; }
+    .btn-row   { display: flex; gap: 0.75rem; }
+    .btn-row .btn { flex: 1; }
+
+    /* ── Exercise header ── */
+    .ex-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.25rem;
+    }
+    .mode-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.3rem 0.85rem;
+      border-radius: 20px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+    }
+    .mode-pill.steps {
+      background: rgba(240,165,0,0.14);
+      color: var(--gold-light);
+      border: 1px solid rgba(240,165,0,0.28);
+    }
+    .mode-pill.leaps {
+      background: rgba(59,130,246,0.14);
+      color: var(--blue-light);
+      border: 1px solid rgba(59,130,246,0.28);
+    }
+    .prog-pill {
+      font-size: 0.78rem;
+      color: var(--muted);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 0.28rem 0.7rem;
+      border-radius: 20px;
+    }
+
+    /* ── Piano SVG ── */
+    .piano-wrap { display: flex; justify-content: center; margin: 1.1rem 0; }
+
+    /* ── Play controls ── */
+    .play-controls {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.65rem;
+      margin: 0.5rem 0 1rem;
+    }
+    .play-dots { display: flex; gap: 8px; min-height: 14px; }
+    .dot {
+      width: 11px; height: 11px;
+      border-radius: 50%;
+      background: var(--surface);
+      border: 2px solid var(--border);
+      transition: background 0.3s, border-color 0.3s;
+    }
+    .dot.filled { background: var(--gold); border-color: var(--gold); }
+
+    .play-btn {
+      width: 70px; height: 70px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--gold-light), var(--gold));
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.2s, box-shadow 0.2s;
+      box-shadow: 0 4px 16px rgba(240,165,0,0.32);
+    }
+    .play-btn:hover:not(:disabled) {
+      transform: scale(1.07);
+      box-shadow: 0 8px 26px rgba(240,165,0,0.48);
+    }
+    .play-btn:disabled { opacity: 0.48; cursor: default; }
+    .play-btn.playing { animation: glow 0.9s ease-in-out infinite; }
+    @keyframes glow {
+      0%,100% { box-shadow: 0 4px 16px rgba(240,165,0,0.32); }
+      50%      { box-shadow: 0 8px 30px rgba(240,165,0,0.65); transform: scale(1.05); }
+    }
+    .play-status {
+      font-size: 0.875rem;
+      color: var(--muted);
+      min-height: 1.3rem;
+      text-align: center;
+    }
+
+    /* ── Divider ── */
+    .divider { height: 1px; background: var(--border); margin: 1.25rem 0; }
+
+    /* ── Solution ── */
+    .sol-label {
+      font-size: 0.72rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+      text-align: center;
+      margin-bottom: 0.8rem;
+    }
+    .solfege-answer {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .answer-badge {
+      background: rgba(240,165,0,0.13);
+      border: 2px solid rgba(240,165,0,0.38);
+      color: var(--gold-light);
+      padding: 0.42rem 0.9rem;
+      border-radius: 8px;
+      font-size: 1.1rem;
+      font-weight: 800;
+    }
+    .melody-name-disp {
+      text-align: center;
+      font-size: 0.82rem;
+      color: var(--muted);
+      font-style: italic;
+      margin-top: 0.7rem;
+    }
+
+    /* ── Loading overlay ── */
+    .loading-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(13,17,23,0.93);
+      backdrop-filter: blur(5px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.9rem;
+      z-index: 999;
+    }
+    .loading-overlay.hidden { display: none; }
+    .spinner {
+      width: 40px; height: 40px;
+      border: 3px solid var(--border);
+      border-top-color: var(--gold);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .ld-title { font-size: 1rem;    color: var(--text); }
+    .ld-sub   { font-size: 0.82rem; color: var(--muted); }
+  </style>
+</head>
+<body>
+
+<!-- ═══ Loading Overlay ═══════════════════════════════════════ -->
+<div class="loading-overlay hidden" id="loadingOverlay">
+  <div class="spinner"></div>
+  <p class="ld-title">Klavier wird geladen…</p>
+  <p class="ld-sub">Echte Klaviersamples werden übertragen</p>
+</div>
+
+<div class="app">
+
+  <!-- ═══ STARTSEITE ══════════════════════════════════════════ -->
+  <div class="screen active card" id="startScreen">
+
+    <!-- Logo-Klavier -->
+    <svg display="block" style="margin:0 auto 1.3rem" width="90" height="52" viewBox="0 0 90 52">
+      <rect x="0" y="0" width="90" height="52" rx="6" fill="#0d1117" stroke="#30363d" stroke-width="1.5"/>
+      <rect x="0" y="0" width="90" height="13" rx="5" fill="#21262d"/>
+      <g fill="#f0ede0" stroke="#21262d" stroke-width="0.6">
+        <rect x="4"  y="13" width="10" height="33" rx="2"/>
+        <rect x="16" y="13" width="10" height="33" rx="2"/>
+        <rect x="28" y="13" width="10" height="33" rx="2"/>
+        <rect x="40" y="13" width="10" height="33" rx="2"/>
+        <rect x="52" y="13" width="10" height="33" rx="2"/>
+        <rect x="64" y="13" width="10" height="33" rx="2"/>
+        <rect x="76" y="13" width="10" height="33" rx="2"/>
+      </g>
+      <g fill="#0d1117">
+        <rect x="12" y="13" width="7" height="21" rx="1.5"/>
+        <rect x="24" y="13" width="7" height="21" rx="1.5"/>
+        <rect x="48" y="13" width="7" height="21" rx="1.5"/>
+        <rect x="60" y="13" width="7" height="21" rx="1.5"/>
+        <rect x="72" y="13" width="7" height="21" rx="1.5"/>
+      </g>
+    </svg>
+
+    <h1>Erkenne die Melodie</h1>
+    <p class="tagline">Gehörbildung · Solmisation</p>
+
+    <p class="desc">
+      Höre die am Klavier vorgespielte Melodie und notiere sie
+      mit den Solmisationssilben.
+    </p>
+
+    <div class="info-box">
+      <div class="solfege-row">
+        <span class="sc">Do</span><span class="sc">Re</span>
+        <span class="sc">Mi</span><span class="sc">Fa</span>
+        <span class="sc">So</span><span class="sc">La</span>
+        <span class="sc">Ti</span>
+      </div>
+      Einfache Tonschritte hörst du <strong>1×</strong> —
+      Melodien mit Tonsprüngen hörst du <strong>2×</strong>.
+    </div>
+
+    <div class="btn-stack">
+      <button class="btn btn-gold" onclick="startExercise('steps')">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6z"/>
+        </svg>
+        Einfache Tonschritte
+      </button>
+      <button class="btn btn-blue" onclick="startExercise('leaps')">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6z"/>
+        </svg>
+        Mit Tonsprüngen
+      </button>
+    </div>
+  </div>
+
+  <!-- ═══ ÜBUNGSSEITE ═════════════════════════════════════════ -->
+  <div class="screen card" id="exerciseScreen">
+
+    <div class="ex-header">
+      <div class="mode-pill steps" id="modePill">♩ Tonschritte · 1×</div>
+      <div class="prog-pill"       id="progPill">1 / 10</div>
+    </div>
+
+    <!-- Klavier-Visualisierung -->
+    <!-- 8 weiße Tasten: C4 D4 E4 F4 G4 A4 B4 C5         -->
+    <!-- Slot-Breite = 28 (25 Taste + 3 Abstand)           -->
+    <!-- Gesamtbreite: 4 + 8×28 − 3 + 4 = 229 ≈ 230       -->
+    <div class="piano-wrap">
+      <svg width="230" height="96" viewBox="0 0 230 96">
+        <rect x="0" y="0" width="230" height="96" rx="6" fill="#0d1117"/>
+        <rect x="0" y="0" width="230" height="14" rx="5" fill="#21262d"/>
+
+        <!-- Weiße Tasten  (x: 4, 32, 60, 88, 116, 144, 172, 200) -->
+        <rect id="key-C4" x="4"   y="14" width="25" height="76" rx="3" fill="#f0ede0"/>
+        <rect id="key-D4" x="32"  y="14" width="25" height="76" rx="3" fill="#f0ede0"/>
+        <rect id="key-E4" x="60"  y="14" width="25" height="76" rx="3" fill="#f0ede0"/>
+        <rect id="key-F4" x="88"  y="14" width="25" height="76" rx="3" fill="#f0ede0"/>
+        <rect id="key-G4" x="116" y="14" width="25" height="76" rx="3" fill="#f0ede0"/>
+        <rect id="key-A4" x="144" y="14" width="25" height="76" rx="3" fill="#f0ede0"/>
+        <rect id="key-B4" x="172" y="14" width="25" height="76" rx="3" fill="#f0ede0"/>
+        <rect id="key-C5" x="200" y="14" width="25" height="76" rx="3" fill="#f0ede0"/>
+
+        <!-- Schwarze Tasten -->
+        <!-- C#: zwischen C4(4–29) und D4(32–57) → Mitte=30.5 → x=23 w=15 -->
+        <!-- D#: zwischen D4(32–57) und E4(60–85) → Mitte=58.5 → x=51 w=15 -->
+        <!-- F#: zwischen F4(88–113) und G4(116–141) → Mitte=114.5 → x=107 w=15 -->
+        <!-- G#: zwischen G4(116–141) und A4(144–169) → Mitte=142.5 → x=135 w=15 -->
+        <!-- A#: zwischen A4(144–169) und B4(172–197) → Mitte=170.5 → x=163 w=15 -->
+        <rect x="23"  y="14" width="15" height="46" rx="2" fill="#0d1117"/>
+        <rect x="51"  y="14" width="15" height="46" rx="2" fill="#0d1117"/>
+        <rect x="107" y="14" width="15" height="46" rx="2" fill="#0d1117"/>
+        <rect x="135" y="14" width="15" height="46" rx="2" fill="#0d1117"/>
+        <rect x="163" y="14" width="15" height="46" rx="2" fill="#0d1117"/>
+
+        <!-- Beschriftungen -->
+        <text x="16"  y="87" text-anchor="middle" font-size="9" fill="#8b949e" font-family="sans-serif">Do</text>
+        <text x="44"  y="87" text-anchor="middle" font-size="9" fill="#8b949e" font-family="sans-serif">Re</text>
+        <text x="72"  y="87" text-anchor="middle" font-size="9" fill="#8b949e" font-family="sans-serif">Mi</text>
+        <text x="100" y="87" text-anchor="middle" font-size="9" fill="#8b949e" font-family="sans-serif">Fa</text>
+        <text x="128" y="87" text-anchor="middle" font-size="9" fill="#8b949e" font-family="sans-serif">So</text>
+        <text x="156" y="87" text-anchor="middle" font-size="9" fill="#8b949e" font-family="sans-serif">La</text>
+        <text x="184" y="87" text-anchor="middle" font-size="9" fill="#8b949e" font-family="sans-serif">Ti</text>
+        <text x="212" y="87" text-anchor="middle" font-size="9" fill="#8b949e" font-family="sans-serif">Do</text>
+      </svg>
+    </div>
+
+    <!-- Play-Steuerung -->
+    <div class="play-controls">
+      <div class="play-dots" id="playDots"></div>
+      <button class="play-btn" id="playBtn" onclick="handlePlay()">
+        <svg width="26" height="26" viewBox="0 0 26 26" fill="#1b1000">
+          <polygon points="8,4 22,13 8,22"/>
+        </svg>
+      </button>
+      <div class="play-status" id="playStatus">Zum Starten drücken</div>
+    </div>
+
+    <!-- Lösungs-Button (erscheint nach dem Vorspielen) -->
+    <div id="solutionBtnWrap" style="display:none;">
+      <div class="divider"></div>
+      <button class="btn btn-gold" onclick="revealSolution()">
+        💡 Lösung anzeigen
+      </button>
+    </div>
+
+    <!-- Lösung (erscheint nach Klick auf Lösungs-Button) -->
+    <div id="solutionWrap" style="display:none;">
+      <div class="divider"></div>
+      <p class="sol-label">Lösung</p>
+      <div class="solfege-answer" id="solfegeAnswer"></div>
+      <p class="melody-name-disp" id="melodyNameDisp"></p>
+    </div>
+
+    <!-- Navigation -->
+    <div class="divider" style="margin-top:1.5rem;"></div>
+    <div class="btn-row">
+      <button class="btn btn-ghost" style="flex:0.55;" onclick="goHome()">← Start</button>
+      <button class="btn btn-gold"  id="nextBtn" style="display:none; flex:1;" onclick="nextExercise()">
+        Nächste ▶
+      </button>
+    </div>
+
+  </div><!-- /#exerciseScreen -->
+</div><!-- /.app -->
+
+<script>
+// ═══════════════════════════════════════════════════════════
+//  KONSTANTEN
+// ═══════════════════════════════════════════════════════════
+
+const SOLFEGE = {
+  'C4':'Do','D4':'Re','E4':'Mi','F4':'Fa',
+  'G4':'So','A4':'La','B4':'Ti','C5':'Do'
+};
+
+const BPM  = 82;
+const BEAT = 60 / BPM; // Sekunden pro Viertelschlag
+
+// ═══════════════════════════════════════════════════════════
+//  MELODIEN
+//  Format: { name, notes: [[noteStr, beats], …] }
+//  1 Beat = Viertelnote, 2 Beats = Halbe Note
+// ═══════════════════════════════════════════════════════════
+
+const STEPS = [
+  { name:'Aufwärts – Do Re Mi',           notes:[['C4',1],['D4',1],['E4',2]] },
+  { name:'Abwärts – Mi Re Do',            notes:[['E4',1],['D4',1],['C4',2]] },
+  { name:'Bogen – Do Re Mi Re Do',        notes:[['C4',1],['D4',1],['E4',1],['D4',1],['C4',2]] },
+  { name:'Quinte aufwärts – Do bis So',   notes:[['C4',1],['D4',1],['E4',1],['F4',1],['G4',2]] },
+  { name:'Quinte abwärts – So bis Do',    notes:[['G4',1],['F4',1],['E4',1],['D4',1],['C4',2]] },
+  { name:'Mi Fa So',                      notes:[['E4',1],['F4',1],['G4',2]] },
+  { name:'So La Ti Do (oben)',             notes:[['G4',1],['A4',1],['B4',1],['C5',2]] },
+  { name:'Do Ti La So (abwärts)',          notes:[['C5',1],['B4',1],['A4',1],['G4',2]] },
+  { name:'Großer Bogen',                  notes:[['C4',1],['D4',1],['E4',1],['F4',1],['E4',1],['D4',1],['C4',2]] },
+  { name:'Re Mi Fa So',                   notes:[['D4',1],['E4',1],['F4',1],['G4',2]] },
+];
+
+const LEAPS = [
+  { name:'Dur-Dreiklang aufwärts',        notes:[['C4',1],['E4',1],['G4',2]] },
+  { name:'Dur-Dreiklang abwärts',         notes:[['G4',1],['E4',1],['C4',2]] },
+  { name:'Quinte + Oktave',               notes:[['C4',1],['G4',1],['C5',2]] },
+  { name:'Dreiklang bis Oktave',          notes:[['C4',1],['E4',1],['G4',1],['C5',2]] },
+  { name:'Quinte dann Schritte',          notes:[['C4',1],['G4',1],['F4',1],['E4',1],['D4',1],['C4',2]] },
+  { name:'Do Mi So Re Do',                notes:[['C4',1],['E4',1],['G4',1],['D4',1],['C4',2]] },
+  { name:'Schritt + Sextsprung',          notes:[['C4',1],['D4',1],['F4',1],['G4',2]] },
+  { name:'So Mi Re Do (Sprünge)',          notes:[['G4',1],['E4',1],['D4',1],['C4',2]] },
+  { name:'Quarte aufwärts + Schritte',    notes:[['G4',1],['C4',1],['D4',1],['E4',2]] },
+  { name:'Mi Do So Mi',                   notes:[['E4',1],['C4',1],['G4',1],['E4',2]] },
+];
+
+// ═══════════════════════════════════════════════════════════
+//  APP-ZUSTAND
+// ═══════════════════════════════════════════════════════════
+
+let piano       = null;
+let audioReady  = false;
+let currentMode = 'steps';
+let queue       = [];
+let qIdx        = 0;
+let melody      = null;
+let totalPlays  = 1;
+let isPlaying   = false;
+let tids        = [];   // aktive setTimeout-IDs
+
+// ═══════════════════════════════════════════════════════════
+//  AUDIO-INITIALISIERUNG
+// ═══════════════════════════════════════════════════════════
+
+async function initAudio() {
+  showLoading(true);
+  try {
+    await Tone.start();
+
+    // Hall-Effekt
+    const reverb = new Tone.Reverb({ decay: 2.5, preDelay: 0.02 });
+    reverb.wet.value = 0.22;
+    await reverb.generate();
+    reverb.toDestination();
+
+    // Echte Klaviersamples (Salamander Piano) laden
+    const loaded = await new Promise(resolve => {
+      const t = setTimeout(() => resolve(false), 9000);
+      let s = new Tone.Sampler({
+        urls: {
+          'A3':'A3.mp3', 'C4':'C4.mp3',
+          'D#4':'Ds4.mp3', 'F#4':'Fs4.mp3',
+          'A4':'A4.mp3',  'C5':'C5.mp3',
+        },
+        baseUrl: 'https://tonejs.github.io/audio/salamander/',
+        onload:  () => { clearTimeout(t); piano = s; resolve(true);  },
+        onerror: () => { clearTimeout(t);             resolve(false); },
+      }).connect(reverb);
+      if (!piano) piano = s; // vorläufig setzen
+    });
+
+    if (!loaded) {
+      // Fallback: PolySynth mit Klavier-ähnlichem Klang
+      console.warn('Samples nicht geladen – Synth-Fallback aktiv');
+      if (piano && piano.dispose) piano.dispose();
+      piano = new Tone.PolySynth(Tone.Synth, {
+        oscillator: { type: 'triangle8' },
+        envelope:   { attack: 0.006, decay: 0.38, sustain: 0.22, release: 2.2 },
+        volume: -3,
+      }).connect(reverb);
+    } else {
+      console.log('✓ Salamander-Piano-Samples geladen');
+    }
+
+  } catch (err) {
+    console.error('Audio-Init fehlgeschlagen:', err);
+    // Notfall-Fallback
+    piano = new Tone.PolySynth().toDestination();
+  }
+  audioReady = true;
+  showLoading(false);
+}
+
+// ═══════════════════════════════════════════════════════════
+//  NAVIGATION
+// ═══════════════════════════════════════════════════════════
+
+function showLoading(v) {
+  document.getElementById('loadingOverlay').classList.toggle('hidden', !v);
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+async function startExercise(mode) {
+  currentMode = mode;
+  if (!audioReady) await initAudio();
+
+  const src = mode === 'steps' ? STEPS : LEAPS;
+  queue = [...src].sort(() => Math.random() - 0.5);
+  qIdx  = 0;
+  totalPlays = mode === 'steps' ? 1 : 2;
+
+  loadMelody();
+  showScreen('exerciseScreen');
+}
+
+function loadMelody() {
+  if (qIdx >= queue.length) {
+    queue.sort(() => Math.random() - 0.5);
+    qIdx = 0;
+  }
+  melody    = queue[qIdx];
+  isPlaying = false;
+
+  // Mode-Pill
+  const pill = document.getElementById('modePill');
+  pill.textContent = currentMode === 'steps' ? '♩ Tonschritte · 1×' : '♫ Mit Sprüngen · 2×';
+  pill.className   = `mode-pill ${currentMode === 'steps' ? 'steps' : 'leaps'}`;
+
+  document.getElementById('progPill').textContent = `${qIdx + 1} / ${queue.length}`;
+
+  // Dots bauen
+  const dotsEl = document.getElementById('playDots');
+  dotsEl.innerHTML = '';
+  for (let i = 0; i < totalPlays; i++) {
+    const d = document.createElement('div');
+    d.className = 'dot';
+    d.id = `dot${i}`;
+    dotsEl.appendChild(d);
+  }
+
+  // UI zurücksetzen
+  document.getElementById('playBtn').disabled = false;
+  document.getElementById('playBtn').classList.remove('playing');
+  document.getElementById('playStatus').textContent    = 'Zum Starten drücken';
+  document.getElementById('solutionBtnWrap').style.display = 'none';
+  document.getElementById('solutionWrap').style.display    = 'none';
+  document.getElementById('nextBtn').style.display         = 'none';
+  resetKeys();
+}
+
+function goHome()       { stopAll(); showScreen('startScreen'); }
+function nextExercise() { stopAll(); qIdx++; loadMelody(); }
+
+// ═══════════════════════════════════════════════════════════
+//  KLAVIER-TASTEN-VISUALISIERUNG
+// ═══════════════════════════════════════════════════════════
+
+const KEY_OFF = '#f0ede0';
+const KEY_ON  = '#f8d56b';
+
+function resetKeys() {
+  Object.keys(SOLFEGE).forEach(n => {
+    const el = document.getElementById(`key-${n}`);
+    if (el) el.style.fill = KEY_OFF;
+  });
+}
+
+function setKey(note, on) {
+  const el = document.getElementById(`key-${note}`);
+  if (el) el.style.fill = on ? KEY_ON : KEY_OFF;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  WIEDERGABE
+// ═══════════════════════════════════════════════════════════
+
+function stopAll() {
+  tids.forEach(clearTimeout);
+  tids = [];
+  isPlaying = false;
+  if (piano && piano.releaseAll) piano.releaseAll();
+  resetKeys();
+}
+
+function tid(fn, ms) {
+  const id = setTimeout(fn, ms);
+  tids.push(id);
+  return id;
+}
+
+/** Spielt die Melodie einmal ab, beginnend bei offsetMs ab jetzt.
+ *  highlight: true → Tasten leuchten (nur bei Lösungs-Wiedergabe)
+ *  Gibt zurück, wann (ms ab jetzt) sie endet. */
+function playOnce(offsetMs, highlight = false) {
+  const notes  = melody.notes;
+  let toneTime = Tone.now() + offsetMs / 1000 + 0.05;
+  let ms       = offsetMs + 50;
+
+  notes.forEach(([note, beats]) => {
+    const durSec = beats * BEAT;
+    const relSec = Math.max(durSec - 0.05, 0.1);
+
+    piano.triggerAttackRelease(note, relSec, toneTime);
+
+    if (highlight) {
+      const n  = note;
+      const t0 = ms;
+      tid(() => setKey(n, true),  t0);
+      tid(() => setKey(n, false), t0 + Math.round(relSec * 1000));
+    }
+
+    toneTime += durSec;
+    ms       += Math.round(durSec * 1000);
+  });
+
+  return ms;
+}
+
+function handlePlay() {
+  if (isPlaying || !audioReady || !melody) return;
+
+  stopAll();
+  isPlaying = true;
+
+  const btn = document.getElementById('playBtn');
+  btn.disabled = true;
+  btn.classList.add('playing');
+
+  // Lösungs-UI verbergen (bei Wiederholung)
+  document.getElementById('solutionBtnWrap').style.display = 'none';
+  document.getElementById('solutionWrap').style.display    = 'none';
+  document.getElementById('nextBtn').style.display         = 'none';
+
+  // Dots zurücksetzen
+  for (let i = 0; i < totalPlays; i++) {
+    const d = document.getElementById(`dot${i}`);
+    if (d) d.classList.remove('filled');
+  }
+
+  const GAP = 1300; // Pause zwischen Wiederholungen (ms)
+  let offset    = 0;
+  let lastEndMs = 0;
+
+  for (let p = 0; p < totalPlays; p++) {
+    const playNum   = p;
+    const startOffs = offset;
+
+    // Status-Text zum Startzeitpunkt anzeigen
+    tid(() => {
+      document.getElementById('playStatus').textContent =
+        totalPlays > 1 ? `${playNum + 1}. Durchgang …` : 'Spielt …';
+    }, startOffs);
+
+    lastEndMs = playOnce(startOffs);
+
+    // Dot füllen wenn dieser Durchgang endet
+    const di = p;
+    tid(() => {
+      const d = document.getElementById(`dot${di}`);
+      if (d) d.classList.add('filled');
+    }, lastEndMs);
+
+    offset = lastEndMs + GAP;
+  }
+
+  // Nach dem letzten Durchgang
+  tid(() => {
+    isPlaying = false;
+    btn.disabled = false;
+    btn.classList.remove('playing');
+    document.getElementById('playStatus').textContent = 'Fertig! Wie lautet die Melodie?';
+    document.getElementById('solutionBtnWrap').style.display = 'block';
+  }, lastEndMs + 380);
+}
+
+// ═══════════════════════════════════════════════════════════
+//  LÖSUNG ANZEIGEN
+// ═══════════════════════════════════════════════════════════
+
+function revealSolution() {
+  document.getElementById('solutionBtnWrap').style.display = 'none';
+  document.getElementById('solutionWrap').style.display    = 'block';
+  document.getElementById('nextBtn').style.display         = 'flex';
+
+  // Solmisations-Badges aufbauen
+  const strip = document.getElementById('solfegeAnswer');
+  strip.innerHTML = '';
+  melody.notes.forEach(([note]) => {
+    const b = document.createElement('div');
+    b.className   = 'answer-badge';
+    b.textContent = SOLFEGE[note] || note;
+    strip.appendChild(b);
+  });
+  document.getElementById('melodyNameDisp').textContent = melody.name;
+
+  // Melodie nochmals vorspielen – diesmal MIT Tasten-Highlighting
+  stopAll();
+  playOnce(0, true);
+}
+</script>
+</body>
+</html>
