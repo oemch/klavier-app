@@ -213,7 +213,22 @@
     }
 
     /* ── Piano SVG ── */
-    .piano-wrap { display: flex; justify-content: center; margin: 1.1rem 0; }
+    .piano-wrap {
+      display: flex;
+      justify-content: center;
+      margin: 1.1rem 0;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    .piano-wrap::-webkit-scrollbar { display: none; }
+    .piano-scroll-hint {
+      text-align: center;
+      font-size: 0.72rem;
+      color: var(--muted);
+      margin-top: -0.4rem;
+      margin-bottom: 0.4rem;
+    }
 
     /* ── Play controls ── */
     .play-controls {
@@ -455,48 +470,73 @@
       <div class="prog-pill"       id="progPill">1 / 10</div>
     </div>
 
-    <!-- Klavier-Visualisierung -->
-    <!-- 8 weiße Tasten: C4 D4 E4 F4 G4 A4 B4 C5         -->
-    <!-- Slot-Breite = 28 (25 Taste + 3 Abstand)           -->
-    <!-- Gesamtbreite: 4 + 8×28 − 3 + 4 = 229 ≈ 230       -->
+    <!-- Klavier-Visualisierung – 2 Oktaven C4–C6                   -->
+    <!-- 15 weiße Tasten, Slot=24px (23px Taste + 1px Abstand)      -->
+    <!-- Breite: 4 + 15×24 − 1 + 4 = 367px  → SVG width=368        -->
     <div class="piano-wrap">
-      <svg width="230" height="96" viewBox="0 0 230 96">
-        <rect x="0" y="0" width="230" height="96" rx="6" fill="#0d1117"/>
-        <rect x="0" y="0" width="230" height="14" rx="5" fill="#21262d"/>
+      <svg width="368" height="94" viewBox="0 0 368 94" style="flex-shrink:0;">
+        <rect x="0" y="0" width="368" height="94" rx="6" fill="#0d1117"/>
+        <rect x="0" y="0" width="368" height="14" rx="5" fill="#21262d"/>
 
-        <!-- Weiße Tasten  (x: 4, 32, 60, 88, 116, 144, 172, 200) -->
-        <rect id="key-C4" x="4"   y="14" width="25" height="76" rx="3" fill="#f0ede0"/>
-        <rect id="key-D4" x="32"  y="14" width="25" height="76" rx="3" fill="#f0ede0"/>
-        <rect id="key-E4" x="60"  y="14" width="25" height="76" rx="3" fill="#f0ede0"/>
-        <rect id="key-F4" x="88"  y="14" width="25" height="76" rx="3" fill="#f0ede0"/>
-        <rect id="key-G4" x="116" y="14" width="25" height="76" rx="3" fill="#f0ede0"/>
-        <rect id="key-A4" x="144" y="14" width="25" height="76" rx="3" fill="#f0ede0"/>
-        <rect id="key-B4" x="172" y="14" width="25" height="76" rx="3" fill="#f0ede0"/>
-        <rect id="key-C5" x="200" y="14" width="25" height="76" rx="3" fill="#f0ede0"/>
+        <!-- Oktaven-Trennlinie (gold) zwischen B4 und C5 -->
+        <rect x="170" y="14" width="2" height="80" fill="rgba(240,165,0,0.35)" rx="1"/>
 
-        <!-- Schwarze Tasten -->
-        <!-- C#: zwischen C4(4–29) und D4(32–57) → Mitte=30.5 → x=23 w=15 -->
-        <!-- D#: zwischen D4(32–57) und E4(60–85) → Mitte=58.5 → x=51 w=15 -->
-        <!-- F#: zwischen F4(88–113) und G4(116–141) → Mitte=114.5 → x=107 w=15 -->
-        <!-- G#: zwischen G4(116–141) und A4(144–169) → Mitte=142.5 → x=135 w=15 -->
-        <!-- A#: zwischen A4(144–169) und B4(172–197) → Mitte=170.5 → x=163 w=15 -->
-        <rect x="23"  y="14" width="15" height="46" rx="2" fill="#0d1117"/>
-        <rect x="51"  y="14" width="15" height="46" rx="2" fill="#0d1117"/>
-        <rect x="107" y="14" width="15" height="46" rx="2" fill="#0d1117"/>
-        <rect x="135" y="14" width="15" height="46" rx="2" fill="#0d1117"/>
-        <rect x="163" y="14" width="15" height="46" rx="2" fill="#0d1117"/>
+        <!-- ── Weiße Tasten 1. Oktave: C4 D4 E4 F4 G4 A4 B4 ── -->
+        <rect id="key-C4" x="4"   y="14" width="23" height="74" rx="2.5" fill="#f0ede0"/>
+        <rect id="key-D4" x="28"  y="14" width="23" height="74" rx="2.5" fill="#f0ede0"/>
+        <rect id="key-E4" x="52"  y="14" width="23" height="74" rx="2.5" fill="#f0ede0"/>
+        <rect id="key-F4" x="76"  y="14" width="23" height="74" rx="2.5" fill="#f0ede0"/>
+        <rect id="key-G4" x="100" y="14" width="23" height="74" rx="2.5" fill="#f0ede0"/>
+        <rect id="key-A4" x="124" y="14" width="23" height="74" rx="2.5" fill="#f0ede0"/>
+        <rect id="key-B4" x="148" y="14" width="23" height="74" rx="2.5" fill="#f0ede0"/>
 
-        <!-- Beschriftungen -->
-        <text x="16"  y="87" text-anchor="middle" font-size="9" fill="#8b949e" font-family="sans-serif">Do</text>
-        <text x="44"  y="87" text-anchor="middle" font-size="9" fill="#8b949e" font-family="sans-serif">Re</text>
-        <text x="72"  y="87" text-anchor="middle" font-size="9" fill="#8b949e" font-family="sans-serif">Mi</text>
-        <text x="100" y="87" text-anchor="middle" font-size="9" fill="#8b949e" font-family="sans-serif">Fa</text>
-        <text x="128" y="87" text-anchor="middle" font-size="9" fill="#8b949e" font-family="sans-serif">So</text>
-        <text x="156" y="87" text-anchor="middle" font-size="9" fill="#8b949e" font-family="sans-serif">La</text>
-        <text x="184" y="87" text-anchor="middle" font-size="9" fill="#8b949e" font-family="sans-serif">Ti</text>
-        <text x="212" y="87" text-anchor="middle" font-size="9" fill="#8b949e" font-family="sans-serif">Do</text>
+        <!-- ── Weiße Tasten 2. Oktave: C5 D5 E5 F5 G5 A5 B5 C6 ── -->
+        <rect id="key-C5" x="172" y="14" width="23" height="74" rx="2.5" fill="#f0ede0"/>
+        <rect id="key-D5" x="196" y="14" width="23" height="74" rx="2.5" fill="#f0ede0"/>
+        <rect id="key-E5" x="220" y="14" width="23" height="74" rx="2.5" fill="#f0ede0"/>
+        <rect id="key-F5" x="244" y="14" width="23" height="74" rx="2.5" fill="#f0ede0"/>
+        <rect id="key-G5" x="268" y="14" width="23" height="74" rx="2.5" fill="#f0ede0"/>
+        <rect id="key-A5" x="292" y="14" width="23" height="74" rx="2.5" fill="#f0ede0"/>
+        <rect id="key-B5" x="316" y="14" width="23" height="74" rx="2.5" fill="#f0ede0"/>
+        <rect id="key-C6" x="340" y="14" width="23" height="74" rx="2.5" fill="#f0ede0"/>
+
+        <!-- ── Schwarze Tasten 1. Oktave ── -->
+        <!-- C#4: x=21  D#4: x=45  F#4: x=93  G#4: x=117  A#4: x=141 -->
+        <rect x="21"  y="14" width="13" height="44" rx="2" fill="#0d1117"/>
+        <rect x="45"  y="14" width="13" height="44" rx="2" fill="#0d1117"/>
+        <rect x="93"  y="14" width="13" height="44" rx="2" fill="#0d1117"/>
+        <rect x="117" y="14" width="13" height="44" rx="2" fill="#0d1117"/>
+        <rect x="141" y="14" width="13" height="44" rx="2" fill="#0d1117"/>
+
+        <!-- ── Schwarze Tasten 2. Oktave ── -->
+        <!-- C#5: x=189  D#5: x=213  F#5: x=261  G#5: x=285  A#5: x=309 -->
+        <rect x="189" y="14" width="13" height="44" rx="2" fill="#0d1117"/>
+        <rect x="213" y="14" width="13" height="44" rx="2" fill="#0d1117"/>
+        <rect x="261" y="14" width="13" height="44" rx="2" fill="#0d1117"/>
+        <rect x="285" y="14" width="13" height="44" rx="2" fill="#0d1117"/>
+        <rect x="309" y="14" width="13" height="44" rx="2" fill="#0d1117"/>
+
+        <!-- ── Beschriftungen 1. Oktave ── -->
+        <text x="15"  y="85" text-anchor="middle" font-size="8" fill="#8b949e" font-family="sans-serif">Do</text>
+        <text x="39"  y="85" text-anchor="middle" font-size="8" fill="#8b949e" font-family="sans-serif">Re</text>
+        <text x="63"  y="85" text-anchor="middle" font-size="8" fill="#8b949e" font-family="sans-serif">Mi</text>
+        <text x="87"  y="85" text-anchor="middle" font-size="8" fill="#8b949e" font-family="sans-serif">Fa</text>
+        <text x="111" y="85" text-anchor="middle" font-size="8" fill="#8b949e" font-family="sans-serif">So</text>
+        <text x="135" y="85" text-anchor="middle" font-size="8" fill="#8b949e" font-family="sans-serif">La</text>
+        <text x="159" y="85" text-anchor="middle" font-size="8" fill="#8b949e" font-family="sans-serif">Ti</text>
+
+        <!-- ── Beschriftungen 2. Oktave (Do gold markiert) ── -->
+        <text x="183" y="85" text-anchor="middle" font-size="8" fill="#f0a500" font-family="sans-serif" font-weight="bold">Do</text>
+        <text x="207" y="85" text-anchor="middle" font-size="8" fill="#8b949e" font-family="sans-serif">Re</text>
+        <text x="231" y="85" text-anchor="middle" font-size="8" fill="#8b949e" font-family="sans-serif">Mi</text>
+        <text x="255" y="85" text-anchor="middle" font-size="8" fill="#8b949e" font-family="sans-serif">Fa</text>
+        <text x="279" y="85" text-anchor="middle" font-size="8" fill="#8b949e" font-family="sans-serif">So</text>
+        <text x="303" y="85" text-anchor="middle" font-size="8" fill="#8b949e" font-family="sans-serif">La</text>
+        <text x="327" y="85" text-anchor="middle" font-size="8" fill="#8b949e" font-family="sans-serif">Ti</text>
+        <text x="351" y="85" text-anchor="middle" font-size="8" fill="#f0a500" font-family="sans-serif" font-weight="bold">Do</text>
       </svg>
     </div>
+    <p class="piano-scroll-hint" id="scrollHint" style="display:none;">← wischen →</p>
 
     <!-- Play-Steuerung -->
     <div class="play-controls">
@@ -549,6 +589,12 @@
 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 let iosUnlocked = false;
 
+// Scroll-Hinweis auf schmalen Screens
+if (window.innerWidth < 400) {
+  const h = document.getElementById('scrollHint');
+  if (h) h.style.display = 'block';
+}
+
 if (isIOS) {
   // Banner sofort anzeigen
   document.getElementById('iosBanner').classList.remove('hidden');
@@ -573,8 +619,8 @@ function unlockIosAudio() {
 // ═══════════════════════════════════════════════════════════
 
 const SOLFEGE = {
-  'C4':'Do','D4':'Re','E4':'Mi','F4':'Fa',
-  'G4':'So','A4':'La','B4':'Ti','C5':'Do'
+  'C4':'Do','D4':'Re','E4':'Mi','F4':'Fa','G4':'So','A4':'La','B4':'Ti',
+  'C5':'Do','D5':'Re','E5':'Mi','F5':'Fa','G5':'So','A5':'La','B5':'Ti','C6':'Do'
 };
 
 const BPM  = 82;
@@ -587,19 +633,27 @@ const BEAT = 60 / BPM; // Sekunden pro Viertelschlag
 // ═══════════════════════════════════════════════════════════
 
 const STEPS = [
+  // ── 1. Oktave ──
   { name:'Aufwärts – Do Re Mi',           notes:[['C4',1],['D4',1],['E4',2]] },
   { name:'Abwärts – Mi Re Do',            notes:[['E4',1],['D4',1],['C4',2]] },
   { name:'Bogen – Do Re Mi Re Do',        notes:[['C4',1],['D4',1],['E4',1],['D4',1],['C4',2]] },
   { name:'Quinte aufwärts – Do bis So',   notes:[['C4',1],['D4',1],['E4',1],['F4',1],['G4',2]] },
   { name:'Quinte abwärts – So bis Do',    notes:[['G4',1],['F4',1],['E4',1],['D4',1],['C4',2]] },
   { name:'Mi Fa So',                      notes:[['E4',1],['F4',1],['G4',2]] },
-  { name:'So La Ti Do (oben)',             notes:[['G4',1],['A4',1],['B4',1],['C5',2]] },
-  { name:'Do Ti La So (abwärts)',          notes:[['C5',1],['B4',1],['A4',1],['G4',2]] },
+  { name:'So La Ti Do',                   notes:[['G4',1],['A4',1],['B4',1],['C5',2]] },
+  { name:'Do Ti La So (abwärts)',         notes:[['C5',1],['B4',1],['A4',1],['G4',2]] },
   { name:'Großer Bogen',                  notes:[['C4',1],['D4',1],['E4',1],['F4',1],['E4',1],['D4',1],['C4',2]] },
   { name:'Re Mi Fa So',                   notes:[['D4',1],['E4',1],['F4',1],['G4',2]] },
+  // ── 2. Oktave ──
+  { name:'Do Re Mi (oben)',               notes:[['C5',1],['D5',1],['E5',2]] },
+  { name:'Mi Fa So (oben)',               notes:[['E5',1],['F5',1],['G5',2]] },
+  { name:'So La Ti Do (oben)',            notes:[['G5',1],['A5',1],['B5',1],['C6',2]] },
+  { name:'Tonleiter – Do bis Do',         notes:[['C4',1],['D4',1],['E4',1],['F4',1],['G4',1],['A4',1],['B4',1],['C5',2]] },
+  { name:'Tonleiter abwärts – Do bis Do', notes:[['C5',1],['B4',1],['A4',1],['G4',1],['F4',1],['E4',1],['D4',1],['C4',2]] },
 ];
 
 const LEAPS = [
+  // ── 1. Oktave ──
   { name:'Dur-Dreiklang aufwärts',        notes:[['C4',1],['E4',1],['G4',2]] },
   { name:'Dur-Dreiklang abwärts',         notes:[['G4',1],['E4',1],['C4',2]] },
   { name:'Quinte + Oktave',               notes:[['C4',1],['G4',1],['C5',2]] },
@@ -607,9 +661,15 @@ const LEAPS = [
   { name:'Quinte dann Schritte',          notes:[['C4',1],['G4',1],['F4',1],['E4',1],['D4',1],['C4',2]] },
   { name:'Do Mi So Re Do',                notes:[['C4',1],['E4',1],['G4',1],['D4',1],['C4',2]] },
   { name:'Schritt + Sextsprung',          notes:[['C4',1],['D4',1],['F4',1],['G4',2]] },
-  { name:'So Mi Re Do (Sprünge)',          notes:[['G4',1],['E4',1],['D4',1],['C4',2]] },
+  { name:'So Mi Re Do (Sprünge)',         notes:[['G4',1],['E4',1],['D4',1],['C4',2]] },
   { name:'Quarte aufwärts + Schritte',    notes:[['G4',1],['C4',1],['D4',1],['E4',2]] },
   { name:'Mi Do So Mi',                   notes:[['E4',1],['C4',1],['G4',1],['E4',2]] },
+  // ── 2 Oktaven ──
+  { name:'Oktave Do–Do (Sprung)',         notes:[['C4',1],['C5',2]] },
+  { name:'Do So Do Re Mi (2 Okt.)',       notes:[['C4',1],['G4',1],['C5',1],['D5',1],['E5',2]] },
+  { name:'So Do Mi So (2 Okt.)',          notes:[['G4',1],['C5',1],['E5',1],['G5',2]] },
+  { name:'Dreiklang 2 Oktaven',           notes:[['C4',1],['E4',1],['G4',1],['C5',1],['E5',2]] },
+  { name:'Do Mi So Do Mi (2 Okt.)',       notes:[['C4',1],['E4',1],['G4',1],['C5',1],['E5',1],['G5',1],['C6',2]] },
 ];
 
 // ═══════════════════════════════════════════════════════════
@@ -650,9 +710,11 @@ async function initAudio() {
       const t = setTimeout(() => resolve(false), 9000);
       let s = new Tone.Sampler({
         urls: {
-          'A3':'A3.mp3', 'C4':'C4.mp3',
-          'D#4':'Ds4.mp3', 'F#4':'Fs4.mp3',
+          'A3':'A3.mp3',  'C4':'C4.mp3',
+          'D#4':'Ds4.mp3','F#4':'Fs4.mp3',
           'A4':'A4.mp3',  'C5':'C5.mp3',
+          'D#5':'Ds5.mp3','F#5':'Fs5.mp3',
+          'A5':'A5.mp3',  'C6':'C6.mp3',
         },
         baseUrl: 'https://tonejs.github.io/audio/salamander/',
         onload:  () => { clearTimeout(t); piano = s; resolve(true);  },
