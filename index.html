@@ -223,6 +223,31 @@
       gap: 0.65rem;
       margin: 0.5rem 0 1rem;
     }
+
+    /* Erster Ton Anzeige */
+    .first-note-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      background: rgba(240,165,0,0.1);
+      border: 1px solid rgba(240,165,0,0.3);
+      border-radius: 10px;
+      padding: 0.5rem 1rem;
+      width: 100%;
+      justify-content: center;
+    }
+    .first-note-label {
+      font-size: 0.78rem;
+      color: var(--muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .first-note-value {
+      font-size: 1.4rem;
+      font-weight: 900;
+      color: var(--gold-light);
+    }
     .play-dots { display: flex; gap: 8px; min-height: 14px; }
     .dot {
       width: 11px; height: 11px;
@@ -473,6 +498,10 @@
 
     <!-- Play-Steuerung -->
     <div class="play-controls">
+      <div class="first-note-row">
+        <span class="first-note-label">Erster Ton:</span>
+        <span class="first-note-value" id="firstNoteDisplay">—</span>
+      </div>
       <div class="play-dots" id="playDots"></div>
       <button class="play-btn" id="playBtn" onclick="handlePlay()">
         <svg width="26" height="26" viewBox="0 0 26 26" fill="#1b1000">
@@ -711,6 +740,11 @@ function loadMelody() {
   document.getElementById('solutionBtnWrap').style.display = 'none';
   document.getElementById('solutionWrap').style.display    = 'none';
   document.getElementById('nextBtn').style.display         = 'none';
+
+  // Ersten Ton anzeigen
+  const firstNote = melody.notes[0][0];
+  document.getElementById('firstNoteDisplay').textContent = SOLFEGE[firstNote] || firstNote;
+
   resetKeys();
 }
 
